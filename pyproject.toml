@@ -1,0 +1,117 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyobservability"
+version = "0.1.0"
+description = "Unified observability and auditing SDK for Python"
+readme = "README.md"
+authors = [
+    { name = "Jamlech Mukavana", email = "jamlechmukavana9@gmail.com" }
+]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Logging",
+    "Topic :: System :: Monitoring",
+    "Typing :: Typed",
+]
+dependencies = [
+    "opentelemetry-api>=1.45.2",
+    "opentelemetry-sdk>=1.45.2",
+    "pydantic>=2.14.3",
+    "pydantic-settings>=2.16.2",
+    "structlog>=26.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.15",
+    "import-linter>=2.16",
+    "mypy>=2.4.1",
+    "pre-commit>=4.7.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.4",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyobservability"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S", "ASYNC", "PL"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = ["--strict-markers", "--import-mode=importlib"]
+markers = [
+    "integration: requires external services (testcontainers)",
+    "security: secret and PII leakage tests",
+    "slow: long-running tests",
+]
+
+[tool.coverage.run]
+source = ["pyobservability"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+
+[tool.importlinter]
+root_package = "pyobservability"
+
+[[tool.importlinter.contracts]]
+name = "Nothing imports integrations"
+type = "forbidden"
+source_modules = [
+    "pyobservability.core",
+    "pyobservability.context",
+    "pyobservability.security",
+    "pyobservability.logging",
+    "pyobservability.tracing",
+    "pyobservability.metrics",
+    "pyobservability.audit",
+    "pyobservability.exporters",
+    "pyobservability.instrumentation",
+]
+forbidden_modules = ["pyobservability.integrations"]
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+layers = [
+    "pyobservability.integrations",
+    "pyobservability.instrumentation",
+    "pyobservability.logging | pyobservability.tracing | pyobservability.metrics | pyobservability.audit",
+    "pyobservability.exporters",
+    "pyobservability.security | pyobservability.context",
+    "pyobservability.core",
+]
+
+[[tool.importlinter.contracts]]
+name = "Telemetry and audit exporters stay independent"
+type = "independence"
+modules = [
+    "pyobservability.exporters",
+    "pyobservability.audit.exporters",
+]
