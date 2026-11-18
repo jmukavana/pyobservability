@@ -1,0 +1,36 @@
+# Example app plus a local OpenTelemetry Collector that prints everything it receives.
+#   docker compose -f examples/collector/docker-compose.yml up --build
+#   curl -X POST localhost:8000/claims/C-1/approve
+# Collector only, with the app running on the host:
+#   docker compose -f examples/collector/docker-compose.yml up collector
+#   PYOBS_TRACING__EXPORTER=otlp PYOBS_TRACING__ENDPOINT=http://localhost:4317 \
+#   PYOBS_METRICS__EXPORTER=otlp PYOBS_METRICS__ENDPOINT=http://localhost:4317 \
+#   uv run uvicorn examples.fastapi.app:app
+services:
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.117.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+  app:
+    build:
+      context: ../..
+      dockerfile: examples/fastapi/Dockerfile
+    environment:
+      PYOBS_TRACING__EXPORTER: otlp
+      PYOBS_TRACING__ENDPOINT: http://collector:4317
+      PYOBS_METRICS__EXPORTER: otlp
+      PYOBS_METRICS__ENDPOINT: http://collector:4317
+    volumes:
+      - audit-spool:/app/.audit-spool
+    ports:
+      - "8000:8000"
+    depends_on:
+      - collector
+
+volumes:
+  audit-spool:

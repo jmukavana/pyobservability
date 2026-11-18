@@ -23,10 +23,45 @@ classifiers = [
 ]
 dependencies = [
     "opentelemetry-api>=1.45.2",
+    "opentelemetry-instrumentation-openai>=0.63.0",
     "opentelemetry-sdk>=1.45.2",
     "pydantic>=2.14.3",
     "pydantic-settings>=2.16.2",
     "structlog>=26.1.0",
+]
+
+[project.optional-dependencies]
+otlp = [
+    "opentelemetry-exporter-otlp-proto-grpc>=1.45.2",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.2",
+]
+http = [
+    "opentelemetry-instrumentation-httpx>=0.66b2",
+    "opentelemetry-instrumentation-requests>=0.66b2",
+]
+flask = [
+    "flask>=3.0",
+]
+django = [
+    "django>=4.2",
+]
+postgres = [
+    "psycopg[binary,pool]>=3.2",
+]
+sqlalchemy = [
+    "sqlalchemy>=2.0",
+]
+celery = [
+    "celery>=5.4",
+]
+kafka = [
+    "aiokafka>=0.11",
+]
+fastapi = [
+    "fastapi>=0.115",
+]
+all = [
+    "pyobservability[celery,django,fastapi,flask,http,kafka,otlp,postgres,sqlalchemy]",
 ]
 
 [dependency-groups]
@@ -40,6 +75,19 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.17.4",
 ]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+]
+extras = [
+    "fastapi>=0.162.4",
+    "httpx>=0.28.1",
+    "pyobservability[celery,django,flask,http,kafka,otlp,postgres,sqlalchemy]",
+    "requests>=2.34.2",
+]
+
+[tool.uv]
+default-groups = ["dev", "extras"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyobservability"]
@@ -52,17 +100,27 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B", "SIM", "S", "ASYNC", "PL"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "PLR2004"]
+"tests/**" = ["S101", "S105", "S106", "PLR2004"]
 
 [tool.mypy]
 strict = true
 python_version = "3.12"
 mypy_path = "src"
 
+[[tool.mypy.overrides]]
+module = ["django.*", "asgiref.*", "celery.*", "kombu.*", "aiokafka.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["pyobservability.integrations.django.apps"]
+disallow_subclassing_any = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = ["--strict-markers", "--import-mode=importlib"]
+asyncio_default_fixture_loop_scope = "function"
+addopts = ["--strict-markers", "--import-mode=importlib", "-p", "no:logging"]
+filterwarnings = ["error"]
 markers = [
     "integration: requires external services (testcontainers)",
     "security: secret and PII leakage tests",
@@ -115,3 +173,6 @@ modules = [
     "pyobservability.exporters",
     "pyobservability.audit.exporters",
 ]
+
+[tool.uv.sources]
+pyobservability = { workspace = true }

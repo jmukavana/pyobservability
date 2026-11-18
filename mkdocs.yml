@@ -1,0 +1,23 @@
+site_name: PyObservability
+site_description: Unified observability and auditing SDK for Python
+theme:
+  name: material
+  features: [navigation.sections, content.code.copy]
+nav:
+  - Home: index.md
+  - Add it to your service: quickstart.md
+  - Configuration: configuration.md
+  - Logging: logging.md
+  - Tracing and metrics: telemetry.md
+  - Auditing: auditing.md
+  - Security: security.md
+  - Integrations:
+      - Web frameworks: integrations/web.md
+      - Databases, Celery and Kafka: integrations/data.md
+  - Operations: operations.md
+  - Deployment: deployment.md
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.highlight
+  - pymdownx.superfences
