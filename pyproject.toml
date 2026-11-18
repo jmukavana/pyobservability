@@ -46,16 +46,16 @@ django = [
     "django>=4.2",
 ]
 postgres = [
-    "psycopg[binary,pool]>=3.2",
+    "psycopg[binary,pool]>=3.2.10",
 ]
 sqlalchemy = [
-    "sqlalchemy>=2.0",
+    "sqlalchemy>=2.0.45",
 ]
 celery = [
     "celery>=5.4",
 ]
 kafka = [
-    "aiokafka>=0.11",
+    "aiokafka>=0.13.0",
 ]
 fastapi = [
     "fastapi>=0.115",
