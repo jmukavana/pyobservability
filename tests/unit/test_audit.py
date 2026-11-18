@@ -463,27 +463,36 @@ class TestRetriesAndDeadLetters:
 
     def test_only_failed_events_of_a_batch_are_retried(self, tmp_path: Path) -> None:
         class PartiallyFailing(RecordingExporter):
+            def __init__(self, **options: Any) -> None:
+                super().__init__(**options)
+                self.entered = threading.Event()
+                self.batches: list[list[str]] = []
+                self._rejected_a = False
+
             def export(self, events: Sequence[AuditEvent]) -> ExportResult:
+                self.entered.set()
                 self.gate.wait()
-                self.attempts += 1
-                first, *rest = events
-                self.delivered.extend(rest)
-                if self.attempts == 1:
-                    return ExportResult({first.event_id: Failure("busy")})
-                self.delivered.append(first)
-                return ExportResult.success()
+                self.batches.append([event.resource_id for event in events])
+                failures = {
+                    event.event_id: Failure("busy")
+                    for event in events
+                    if event.resource_id == "A" and not self._rejected_a
+                }
+                self._rejected_a = self._rejected_a or bool(failures)
+                return ExportResult(failures) if failures else ExportResult.success()
 
         if "partial" not in audit_exporters.names():
             audit_exporters.register("partial", PartiallyFailing)
         configure_audit({"name": "partial", "options": {"blocked": True}}, **disk(tmp_path))
+        approve(resource_id="HOLD")
+        assert exporter().entered.wait(timeout=5)  # dispatcher is now parked inside export
         approve(resource_id="A")
         approve(resource_id="B")
         exporter().gate.set()
 
-        delivered = delivered_events()
+        assert audit.flush(timeout_s=5)
 
-        assert exporter().attempts == 2
-        assert sorted(event.resource_id for event in delivered) == ["A", "B"]
+        assert exporter().batches == [["HOLD"], ["A", "B"], ["A"]]
 
 
 class TestNoSilentLoss:

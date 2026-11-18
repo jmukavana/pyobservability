@@ -50,6 +50,7 @@ Delivery threads do not survive `fork()`, so configure in each worker, not in th
 # gunicorn.conf.py
 def post_fork(server, worker):
     import pyobservability
+
     pyobservability.configure(service_name="claims-service")  # durability etc. from PYOBS_* env
 ```
 

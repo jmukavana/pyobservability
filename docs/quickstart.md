@@ -152,7 +152,7 @@ from pyobservability.integrations.fastapi import ObservabilityMiddleware
 async def lifespan(_: FastAPI):
     pyobservability.configure(service_name="claims-service")
     yield
-    await pyobservability.ashutdown()      # flushes spans, metrics, logs and audit
+    await pyobservability.ashutdown()  # flushes spans, metrics, logs and audit
 
 
 app = FastAPI(lifespan=lifespan)
@@ -169,10 +169,10 @@ import pyobservability
 from flask import Flask
 from pyobservability.integrations.flask import PyObservability
 
-pyobservability.configure(service_name="claims-service")   # before creating routes that log
+pyobservability.configure(service_name="claims-service")  # before creating routes that log
 
 app = Flask(__name__)
-PyObservability(app)        # or: ext = PyObservability(); ext.init_app(app)
+PyObservability(app)  # or: ext = PyObservability(); ext.init_app(app)
 ```
 
 Installing it twice on one app is harmless. Flask has no shutdown hook, so rely on the built-in
@@ -183,12 +183,12 @@ Installing it twice on one app is harmless. Flask has no shutdown hook, so rely 
 ```python
 # settings.py
 INSTALLED_APPS = [
-    "pyobservability.integrations.django",    # calls configure() from PYOBSERVABILITY below
+    "pyobservability.integrations.django",  # calls configure() from PYOBSERVABILITY below
     # ...
 ]
 
 MIDDLEWARE = [
-    "pyobservability.integrations.django.ObservabilityMiddleware",   # keep it first
+    "pyobservability.integrations.django.ObservabilityMiddleware",  # keep it first
     # ...
 ]
 
@@ -208,12 +208,14 @@ variables with a one-line `configure(service_name=...)`.
 import pyobservability
 from pyobservability import get_logger
 
+
 def main() -> None:
     pyobservability.configure(service_name="claims-batch")
     try:
         run_job()
     finally:
-        pyobservability.shutdown()      # drains audit and exports before the process exits
+        pyobservability.shutdown()  # drains audit and exports before the process exits
+
 
 main()
 ```
@@ -237,12 +239,12 @@ import pyobservability
 from pyobservability.integrations.celery import instrument_celery
 
 app = Celery("claims")
-instrument_celery()                 # in the publisher AND the worker; repeats are no-ops
+instrument_celery()  # in the publisher AND the worker; repeats are no-ops
 
 
 @worker_process_init.connect
 def configure_observability(**_):
-    pyobservability.configure(service_name="claims-worker")   # per prefork child, not before forking
+    pyobservability.configure(service_name="claims-worker")  # per prefork child, not before forking
 ```
 
 The publisher adds `traceparent` and the request, tenant and user IDs to each task's headers; the
@@ -275,6 +277,7 @@ master:
 # gunicorn.conf.py
 def post_fork(server, worker):
     import pyobservability
+
     pyobservability.configure(service_name="claims-service")
 ```
 
@@ -304,13 +307,16 @@ see [Security](security.md) for the rules and how to extend them.
 ```python
 from pyobservability import get_tracer, traced
 
-@traced                                  # span named after the function
+
+@traced  # span named after the function
 def decide(claim_id: str) -> str: ...
 
-@traced(name="claims.score", attributes={"model": "v3"})
-async def score(claim_id: str) -> float: ...   # async functions work too
 
-tracer = get_tracer(__name__)             # a native OpenTelemetry tracer
+@traced(name="claims.score", attributes={"model": "v3"})
+async def score(claim_id: str) -> float: ...  # async functions work too
+
+
+tracer = get_tracer(__name__)  # a native OpenTelemetry tracer
 with tracer.start_as_current_span("load-policy") as span:
     span.set_attribute("policy.id", policy_id)
 ```
@@ -335,7 +341,7 @@ each metric is capped at `metrics.max_cardinality_per_metric` series (2000 by de
 ```python
 from pyobservability import context
 
-context.set(user_id=current_user.id, tenant_id=current_user.tenant)   # for the rest of this request
+context.set(user_id=current_user.id, tenant_id=current_user.tenant)  # for the rest of this request
 ```
 
 Everything logged or audited afterwards in the same request carries these IDs. The web integrations
@@ -349,7 +355,7 @@ from a request header, set `context={"tenant_header": "X-Tenant-ID"}`.
 from pyobservability import audit
 
 audit.record(
-    event_type="CLAIM_APPROVED",        # UPPER_SNAKE_CASE, 3 to 64 characters
+    event_type="CLAIM_APPROVED",  # UPPER_SNAKE_CASE, 3 to 64 characters
     resource_type="CLAIM",
     resource_id="CLM-001",
     action="APPROVE",
@@ -364,8 +370,13 @@ same transaction when you use the outbox:
 ```python
 with Session(engine) as session, session.begin():
     claim.status = "APPROVED"
-    audit.record(event_type="CLAIM_APPROVED", resource_type="CLAIM", resource_id=claim.id,
-                 action="APPROVE", transaction=session)
+    audit.record(
+        event_type="CLAIM_APPROVED",
+        resource_type="CLAIM",
+        resource_id=claim.id,
+        action="APPROVE",
+        transaction=session,
+    )
 ```
 
 A normal return means the configured durability boundary was reached. Consumers of audit data must
