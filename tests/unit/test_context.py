@@ -39,7 +39,9 @@ class TestAttributes:
 
         assert context.get("tenant_id") == "t-1"
 
-    @pytest.mark.parametrize("key", ["", "1starts_with_digit", "has space", "x" * 65])
+    @pytest.mark.parametrize(
+        "key", ["", "1starts_with_digit", "has space", "trailing_newline\n", "x" * 65]
+    )
     def test_invalid_keys_are_rejected(self, key: str) -> None:
         with pytest.raises(ValueError, match="invalid context key"):
             context.set(**{key: "value"})
@@ -139,7 +141,8 @@ class TestRequestBinding:
             assert context.get("request_id") == "abc-12345678"
 
     @pytest.mark.parametrize(
-        "unsafe", ["short", "has spaces in it", "inject\nnewline-12345", "x" * 129]
+        "unsafe",
+        ["short", "has spaces in it", "inject\nnewline-12345", "trailing-newline\n", "x" * 129],
     )
     def test_replaces_malformed_incoming_request_id(self, unsafe: str) -> None:
         with self.binder().bind({"X-Request-ID": unsafe}):

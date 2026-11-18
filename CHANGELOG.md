@@ -5,13 +5,23 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ## [Unreleased]
 
 ### Fixed
+- Request IDs, context keys and PostgreSQL schema names ending in a newline were accepted by their validation patterns (`$` matches before a trailing newline); they now use a full match.
 - Redaction no longer slows down on long unbroken strings: four patterns (URL credentials, secret query values, emails and card numbers) backtracked quadratically, so a 16 KB base64 blob or hostile input took 250-780 ms to redact. All rules are now length-bounded and the worst case is ~30 ms, scaling linearly.
 - Masking many card numbers in one string no longer recurses once per card.
 - OTLP gRPC exporters no longer force TLS on `http://` endpoints: `insecure` is now inferred from the endpoint scheme unless set explicitly (`https://` always uses TLS).
 - Recording an audit event in a process forked after `configure()` now raises `AuditDurabilityError` instead of queueing events no thread will deliver.
 - `configure()` no longer crashes when the working directory has a `pyproject.toml` without a `[tool.pyobservability]` table.
 
+### Changed
+- Raised minimum versions so the lowest-direct CI job can install and run on Python 3.12 to 3.14: `psycopg>=3.2.10`, `aiokafka>=0.13.0` and `sqlalchemy>=2.0.45`.
+
 ### Added
+- Audit engine: `audit.record()` / `arecord()` / `flush()` with memory, disk (write-ahead log), exporter and outbox durability boundaries, retries with backoff, dead letters and idempotent delivery on `event_id`; console, file, PostgreSQL and Kafka exporters.
+- Tamper evidence: per-tenant HMAC hash chains computed by PostgreSQL, append-only triggers and `audit.verify()`.
+- Transactional outbox: `audit.record(transaction=...)` for psycopg and SQLAlchemy, with a multi-process safe relay.
+- Metrics: `get_meter()` on OpenTelemetry with a label policy and per-metric cardinality limit.
+- Integrations: FastAPI/Starlette (ASGI), Flask and Django middleware, `instrument_engine` for SQLAlchemy and `instrument_celery`.
+- Integration guide, deployment guide and a containerised example with an OpenTelemetry Collector.
 - Documentation (MkDocs), a runnable FastAPI example and a local OpenTelemetry Collector compose file.
 - Package scaffold, tooling, CI workflows and public-API snapshot test.
 - `configure()`, `shutdown()` and `ashutdown()` with idempotent configuration and bounded, ordered shutdown.

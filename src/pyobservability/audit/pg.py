@@ -19,6 +19,6 @@ def resolve_dsn(dsn: str | SecretStr | None, dsn_env: str | None, *, owner: str)
 
 
 def validated_identifier(name: str) -> str:
-    if not _IDENTIFIER.match(name):
+    if not _IDENTIFIER.fullmatch(name):
         raise ConfigurationError(f"invalid PostgreSQL schema name {name!r}")
     return name

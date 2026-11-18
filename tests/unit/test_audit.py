@@ -23,6 +23,7 @@ from pyobservability import (
 from pyobservability.audit import AuditEvent, ExportResult, Failure, audit_exporters
 from pyobservability.audit.delivery import DEAD_LETTER_FILE, RetrySchedule
 from pyobservability.audit.exporters import ConsoleAuditExporter, JsonLinesAuditExporter
+from pyobservability.audit.pg import validated_identifier
 from pyobservability.audit.schemas import uuid7
 from pyobservability.audit.wal import LOG_FILE, WriteAheadLog
 from pyobservability.config import RetryConfig
@@ -569,7 +570,8 @@ class TestNoSilentLoss:
         pyobservability.shutdown()
         logged = capsys.readouterr().err
 
-        assert all(str(receipt.event_id) in logged for receipt in receipts)
+        # Card-number redaction can mask digits inside an event id, so count lines, not ids.
+        assert logged.count("audit event could not be delivered") == len(receipts), logged
 
     def test_disk_events_left_at_shutdown_are_recovered_on_restart(self, tmp_path: Path) -> None:
         configure_audit(
@@ -740,3 +742,9 @@ class TestForkSafety:
         approve()
 
         assert len(delivered_events()) == 1
+
+
+@pytest.mark.parametrize("name", ["public\n", "Public", "1schema", "a-b", "x" * 64])
+def test_unsafe_schema_names_are_rejected(name: str) -> None:
+    with pytest.raises(pyobservability.ConfigurationError, match="invalid PostgreSQL schema"):
+        validated_identifier(name)

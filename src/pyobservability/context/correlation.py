@@ -44,7 +44,7 @@ class RequestContextBinder:
 
     def _request_id_from(self, headers: Mapping[str, str]) -> str:
         incoming = headers.get(self._config.request_id_header.lower(), "")
-        if self._config.trust_incoming_request_id and _SAFE_REQUEST_ID.match(incoming):
+        if self._config.trust_incoming_request_id and _SAFE_REQUEST_ID.fullmatch(incoming):
             return incoming
         return new_request_id()
 

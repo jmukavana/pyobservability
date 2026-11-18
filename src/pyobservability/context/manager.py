@@ -81,7 +81,7 @@ def _merged_with_current(attributes: Mapping[str, ContextValue]) -> Mapping[str,
 
 
 def _validated_value(key: str, value: ContextValue) -> ContextValue:
-    if not _KEY_PATTERN.match(key):
+    if not _KEY_PATTERN.fullmatch(key):
         raise ValueError(f"invalid context key {key!r}")
     if not isinstance(value, ContextValue):
         raise TypeError(

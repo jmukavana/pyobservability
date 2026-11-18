@@ -1,5 +1,7 @@
 site_name: PyObservability
 site_description: Unified observability and auditing SDK for Python
+repo_url: https://github.com/jmukavana/pyobservability
+repo_name: jmukavana/pyobservability
 theme:
   name: material
   features: [navigation.sections, content.code.copy]
