@@ -13,6 +13,11 @@ errors, the value becomes `[REDACTION_FAILED]` and, for audit events, the event 
 | Secret **values** in any text | JWTs, `Bearer`/`Basic` credentials, AWS/GitHub/Slack/Stripe keys, PEM private keys, `scheme://user:pass@`, `?access_token=…` query values, Luhn-valid card numbers, plus `extra_patterns` |
 | PII | emails, `+`-prefixed phone numbers, IPv4 addresses, and fields named in `pii_fields` (`email`, `phone`, `first_name`, …) |
 
+Card numbers are found as runs of 13 to 19 digits that pass the Luhn check, even when split by spaces or
+hyphens or sitting next to other numbers. Tokens in standard UUID form (`8-4-4-4-12` hexadecimal) are
+not treated as cards, so request, event and resource IDs stay intact; a card number deliberately
+written in UUID form is therefore not masked.
+
 PII handling is `pii_strategy`: `mask` (`j***@example.com`), `hash` (salted HMAC, needs `hash_salt`,
 keeps values correlatable) or `drop`. Nested dicts, lists, dataclasses and pydantic models are walked;
 depth, size and cycles are bounded.

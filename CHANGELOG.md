@@ -5,6 +5,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ## [Unreleased]
 
 ### Fixed
+- Card-number masking no longer alters UUIDs: about 1 in 400 UUIDs has digits that pass the Luhn check and was partly replaced with `[REDACTED]` in logs, including audit event IDs in dead-letter messages. UUID-shaped tokens are now exempt; cards written with spaces or hyphens, or next to UUIDs, are still masked.
 - Request IDs, context keys and PostgreSQL schema names ending in a newline were accepted by their validation patterns (`$` matches before a trailing newline); they now use a full match.
 - Redaction no longer slows down on long unbroken strings: four patterns (URL credentials, secret query values, emails and card numbers) backtracked quadratically, so a 16 KB base64 blob or hostile input took 250-780 ms to redact. All rules are now length-bounded and the worst case is ~30 ms, scaling linearly.
 - Masking many card numbers in one string no longer recurses once per card.
@@ -21,6 +22,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - Transactional outbox: `audit.record(transaction=...)` for psycopg and SQLAlchemy, with a multi-process safe relay.
 - Metrics: `get_meter()` on OpenTelemetry with a label policy and per-metric cardinality limit.
 - Integrations: FastAPI/Starlette (ASGI), Flask and Django middleware, `instrument_engine` for SQLAlchemy and `instrument_celery`.
+- Grafana stack example (`examples/grafana`): Collector, Prometheus, Tempo, Loki and a provisioned Grafana dashboard for HTTP and audit metrics, logs and traces, with a traffic generator and a guide.
 - Integration guide, deployment guide and a containerised example with an OpenTelemetry Collector.
 - Documentation (MkDocs), a runnable FastAPI example and a local OpenTelemetry Collector compose file.
 - Package scaffold, tooling, CI workflows and public-API snapshot test.

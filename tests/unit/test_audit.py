@@ -570,8 +570,8 @@ class TestNoSilentLoss:
         pyobservability.shutdown()
         logged = capsys.readouterr().err
 
-        # Card-number redaction can mask digits inside an event id, so count lines, not ids.
-        assert logged.count("audit event could not be delivered") == len(receipts), logged
+        missing = [str(r.event_id) for r in receipts if str(r.event_id) not in logged]
+        assert not missing, logged
 
     def test_disk_events_left_at_shutdown_are_recovered_on_restart(self, tmp_path: Path) -> None:
         configure_audit(

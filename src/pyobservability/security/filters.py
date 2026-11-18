@@ -80,6 +80,8 @@ SECRET_QUERY_VALUE = (
     rf"(?i)(?P<name>[?&;]{_QUERY_NAME}"
     rf"(?:token|key|secret|password|passwd|signature|auth|session){_QUERY_NAME}=)[^&#\s]+"
 )
+_UUID = r"(?<![0-9A-Za-z])[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}(?![0-9A-Za-z])"
+_UUID_TOKEN = re.compile(_UUID)
 _DIGIT_GROUP = re.compile(r"\d+")
 
 
@@ -149,7 +151,8 @@ def secret_rules(mask_token: str, extra_patterns: Iterable[str]) -> tuple[TextRu
         return mask_token
 
     def masked_card(match: re.Match[str]) -> str:
-        return _mask_card_numbers(match.group(), mask_token)
+        text = match.group()
+        return text if _UUID_TOKEN.fullmatch(text) else _mask_card_numbers(text, mask_token)
 
     def masked_url_credentials(match: re.Match[str]) -> str:
         return f"{match.group('scheme')}{mask_token}@"
@@ -168,7 +171,7 @@ def secret_rules(mask_token: str, extra_patterns: Iterable[str]) -> tuple[TextRu
         (PEM_PRIVATE_KEY, masked),
         (URL_CREDENTIALS, masked_url_credentials),
         (SECRET_QUERY_VALUE, masked_query_value),
-        (rf"(?<!\d)(?=(?:[ -]?\d){{{_MIN_CARD_DIGITS}}})\d(?:[ -]?\d)*", masked_card),
+        (rf"{_UUID}|(?<!\d)(?=(?:[ -]?\d){{{_MIN_CARD_DIGITS}}})\d(?:[ -]?\d)*", masked_card),
         *((pattern, masked) for pattern in extra_patterns),
     ]
     return tuple(TextRule(re.compile(pattern), replace) for pattern, replace in patterns)

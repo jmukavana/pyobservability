@@ -16,6 +16,7 @@ nav:
   - Integrations:
       - Web frameworks: integrations/web.md
       - Databases, Celery and Kafka: integrations/data.md
+      - Grafana stack: integrations/grafana.md
   - Operations: operations.md
   - Deployment: deployment.md
 markdown_extensions:

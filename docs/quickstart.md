@@ -95,7 +95,7 @@ The same thing as environment variables:
 ```bash
 PYOBS_SERVICE_NAME=claims-service
 PYOBS_ENVIRONMENT=production
-OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317   # also switches tracing and metrics to OTLP
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317   # the endpoint; OTLP is the default exporter outside development
 PYOBS_AUDITING__DURABILITY__BOUNDARY=disk
 PYOBS_AUDITING__DURABILITY__SPOOL_DIR=/var/lib/claims/audit
 ```
@@ -455,9 +455,12 @@ prints to the console.
 5. Check the audit event printed (console exporter) or landed in your sink, with the same `trace_id`.
 6. Hit `/healthz`: it produces no span and no access log.
 
-To check the Collector path, run `examples/collector/docker-compose.yml`, point
-`OTEL_EXPORTER_OTLP_ENDPOINT` at `http://localhost:4317`, repeat the request, and look for your
-`service.name` in the Collector log. Spans are batched, so allow up to about 5 seconds.
+To check the Collector path, run `examples/collector/docker-compose.yml`, set
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317` together with `PYOBS_TRACING__EXPORTER=otlp` and
+`PYOBS_METRICS__EXPORTER=otlp` (in `development` the endpoint alone leaves the exporters on
+`console`), repeat the request, and look for your `service.name` in the Collector log. Spans are
+batched, so allow up to about 5 seconds. For a full dashboard instead of Collector logs, see
+[Grafana stack](integrations/grafana.md).
 
 ### Testing your own code
 

@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from hypothesis import given
@@ -355,6 +355,36 @@ def test_card_numbers_next_to_other_numbers_are_masked(text: str) -> None:
     assert "0000-0000" not in redacted
 
 
+class TestIdentifiersAreNotMistakenForCards:
+    """Time-ordered UUIDs and random ones pass the Luhn check by chance about 1 time in 400."""
+
+    LUHN_VALID_UUID = "01a1eca8-6906-7373-8100-c7bcfe88a272"
+
+    def test_a_uuid_whose_digits_pass_luhn_is_kept(self, redactor: Redactor) -> None:
+        assert redactor.redact_text(f"event {self.LUHN_VALID_UUID} failed") == (
+            f"event {self.LUHN_VALID_UUID} failed"
+        )
+
+    @given(st.uuids())
+    def test_no_uuid_is_ever_altered(self, value: UUID) -> None:
+        text = f"claim {value} / {str(value).upper()}"
+
+        assert Redactor(SecurityConfig()).redact_text(text) == text
+
+    def test_a_card_next_to_a_uuid_is_still_masked(self, redactor: Redactor) -> None:
+        redacted = redactor.redact_text(f"card 4111111111111111 for {self.LUHN_VALID_UUID}")
+
+        assert "4111111111111111" not in redacted
+        assert self.LUHN_VALID_UUID in redacted
+
+    @pytest.mark.parametrize("text", ["id 4111-1111-1111-1111", "id 5500 0000 0000 0004"])
+    def test_hyphen_and_space_separated_cards_are_still_masked(
+        self, redactor: Redactor, text: str
+    ) -> None:
+        assert "1111-1111" not in redactor.redact_text(text)
+        assert "0000 0000" not in redactor.redact_text(text)
+
+
 ADVERSARIAL_LENGTH = 16_000
 SLOWEST_ACCEPTABLE_S = 0.25
 """A quadratic rule needs 0.3-0.8 s on these inputs; linear ones need under 0.04 s."""
@@ -371,6 +401,8 @@ ADVERSARIAL_TEXTS = {
     "email with long domain": "a@" + "b." * (ADVERSARIAL_LENGTH // 2),
     "repeated key headers": "-----BEGIN PRIVATE KEY-----" * (ADVERSARIAL_LENGTH // 27),
     "plus then digits": "+" + "1" * ADVERSARIAL_LENGTH,
+    "almost uuids": "01234567-89ab-cdef-0123-456789abcde " * (ADVERSARIAL_LENGTH // 36),
+    "uuid chains": "01234567-89ab-cdef-0123-456789abcdef-" * (ADVERSARIAL_LENGTH // 37),
 }
 
 
