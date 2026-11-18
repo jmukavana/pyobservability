@@ -484,15 +484,17 @@ class TestRetriesAndDeadLetters:
         if "partial" not in audit_exporters.names():
             audit_exporters.register("partial", PartiallyFailing)
         configure_audit({"name": "partial", "options": {"blocked": True}}, **disk(tmp_path))
+        partial = exporter()
+        assert isinstance(partial, PartiallyFailing)
         approve(resource_id="HOLD")
-        assert exporter().entered.wait(timeout=5)  # dispatcher is now parked inside export
+        assert partial.entered.wait(timeout=5)  # dispatcher is now parked inside export
         approve(resource_id="A")
         approve(resource_id="B")
-        exporter().gate.set()
+        partial.gate.set()
 
         assert audit.flush(timeout_s=5)
 
-        assert exporter().batches == [["HOLD"], ["A", "B"], ["A"]]
+        assert partial.batches == [["HOLD"], ["A", "B"], ["A"]]
 
 
 class TestNoSilentLoss:
